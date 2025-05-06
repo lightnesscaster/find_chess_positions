@@ -21,7 +21,7 @@ EARLY_DEPTH_LIMIT = 15
 SCORE_THRESHOLD = 300 # e.g., 1.5 pawns
 
 # Maximum number of positions to find before stopping
-MAX_POSITIONS = 2000
+MAX_POSITIONS = 500
 
 # Output PGN filename
 OUTPUT_PGN_FILENAME = "found_critical_positions.pgn"
@@ -386,7 +386,7 @@ if __name__ == "__main__":
     start_time = time.time()
 
     # Replace with the actual path to your PGN file
-    pgn_path = 'twic1591.pgn' # <<< CHANGE THIS
+    pgn_path = 'mega_pgn_database.pgn' # <<< CHANGE THIS
 
     print(f"Starting analysis on {pgn_path} at {time.strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"Using engine: {STOCKFISH_PATH}")

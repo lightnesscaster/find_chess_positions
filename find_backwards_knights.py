@@ -15,6 +15,8 @@ ANALYSIS_TIME_LIMIT = 30 # seconds per move evaluation
 ANALYSIS_DEPTH_LIMIT = 25 # Alternative: fixed depth
 EARLY_CHECK_TIME = 1 # seconds for preliminary check
 EARLY_DEPTH_LIMIT = 15
+ENGINE_THREADS = 8 # Number of CPU threads for the engine
+ENGINE_HASH_MB = 12288 # Hash size in MB for the engine
 
 # Threshold for 'significantly better' (in centipawns)
 # How much better the backward knight move must be than the next best alternative
@@ -52,8 +54,8 @@ def find_critical_backward_knight_moves(pgn_file_path, engine_path):
         engine = chess.engine.SimpleEngine.popen_uci(engine_path)
 
         engine.configure({
-            "Threads": 8,  # Use 11 physical cores
-            "Hash": 12288    # Allocate 12 GB of RAM
+            "Threads": ENGINE_THREADS,
+            "Hash": ENGINE_HASH_MB
         })
 
         with open(pgn_file_path, 'r', encoding='utf-8', errors='replace') as pgn_file:
@@ -157,8 +159,8 @@ def find_critical_backward_knight_moves(pgn_file_path, engine_path):
                                 if not analysis_results or not isinstance(analysis_results, list) or len(analysis_results) == 0:
                                     print("    MultiPV analysis did not return valid results.")
                                     prelim_failed = True
-                                # Ensure the first PV has moves and a score
-                                elif not analysis_results[0].get("pv") or not analysis_results[0].get("score"): # Simplified condition
+                                # Ensure the first PV has a 'pv' key, its list is not empty, and it has a 'score' key
+                                elif not analysis_results[0].get("pv") or not analysis_results[0]["pv"] or not analysis_results[0].get("score"):
                                     print("    Engine's top line from MultiPV is missing PV (or PV is empty) or score.")
                                     prelim_failed = True
                                 else:
@@ -400,7 +402,6 @@ def find_critical_backward_knight_moves(pgn_file_path, engine_path):
 # --- How to use it ---
 if __name__ == "__main__":
     # Record start time for performance check
-    import time
     start_time = time.time()
 
     # Replace with the actual path to your PGN file
@@ -408,6 +409,7 @@ if __name__ == "__main__":
 
     print(f"Starting analysis on {pgn_path} at {time.strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"Using engine: {STOCKFISH_PATH}")
+    print(f"Engine settings: Threads={ENGINE_THREADS}, Hash={ENGINE_HASH_MB}MB") # Added engine settings print
     print(f"Preliminary check time per move: {EARLY_CHECK_TIME}s") # Added print statement
     print(f"Full analysis limits per move: Depth={ANALYSIS_DEPTH_LIMIT}, Time={ANALYSIS_TIME_LIMIT}s")
     print(f"Score threshold: {SCORE_THRESHOLD}cp")

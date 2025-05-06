@@ -158,8 +158,8 @@ def find_critical_backward_knight_moves(pgn_file_path, engine_path):
                                     print("    MultiPV analysis did not return valid results.")
                                     prelim_failed = True
                                 # Ensure the first PV has moves and a score
-                                elif not analysis_results[0].get("pv") or not analysis_results[0]["pv"] or not analysis_results[0].get("score"):
-                                    print("    Engine's top line from MultiPV is missing PV, moves in PV, or score.")
+                                elif not analysis_results[0].get("pv") or not analysis_results[0].get("score"): # Simplified condition
+                                    print("    Engine's top line from MultiPV is missing PV (or PV is empty) or score.")
                                     prelim_failed = True
                                 else:
                                     # Eval check for engine's top line (score is after the first move of this PV)

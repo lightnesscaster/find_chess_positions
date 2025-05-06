@@ -143,8 +143,9 @@ def find_critical_backward_knight_moves(pgn_file_path, engine_path):
                             best_move = None # Initialize best_move (alternative move, chess.Move object)
                             best_score = None # Initialize best_score (for alternative move in prelim)
                             backward_score = None # Initialize backward_score (for backward move in prelim)
+                            analysis_results = None # Initialize
 
-                            # Identify the best alternative move using MultiPV
+                            # --- Step 1: Perform MultiPV Analysis ---
                             try:
                                 analysis_results = engine.analyse(
                                     board,
@@ -152,43 +153,60 @@ def find_critical_backward_knight_moves(pgn_file_path, engine_path):
                                     multipv=2  # Get top 2 lines
                                 )
 
-                                if not analysis_results:
-                                    print("    No analysis results from engine for MultiPV.")
+                                # --- Step 2: Validate MultiPV results and Check Evaluation of Engine's Top Line ---
+                                if not analysis_results or not isinstance(analysis_results, list) or len(analysis_results) == 0:
+                                    print("    MultiPV analysis did not return valid results.")
+                                    prelim_failed = True
+                                # Ensure the first PV has moves and a score
+                                elif not analysis_results[0].get("pv") or not analysis_results[0]["pv"] or not analysis_results[0].get("score"):
+                                    print("    Engine's top line from MultiPV is missing PV, moves in PV, or score.")
                                     prelim_failed = True
                                 else:
-                                    # Check PV1
-                                    if analysis_results[0]["pv"]:
-                                        candidate_move1 = analysis_results[0]["pv"][0]
-                                        if candidate_move1.uci() != backward_move_uci:
-                                            if candidate_move1 in legal_moves:
-                                                best_move = candidate_move1
-                                            else:
-                                                print(f"    Engine's top move {board.san(candidate_move1)} from PV1 is not legal.")
-                                                # prelim_failed will be true if best_move remains None
-                                        else:
-                                            # PV1 is the backward move, check PV2
-                                            if len(analysis_results) > 1 and analysis_results[1]["pv"]:
-                                                candidate_move2 = analysis_results[1]["pv"][0]
-                                                # Ensure PV2 is not also the backward move (should be different if multipv works as expected)
-                                                if candidate_move2.uci() != backward_move_uci:
-                                                    if candidate_move2 in legal_moves:
-                                                        best_move = candidate_move2
-                                                    else:
-                                                        print(f"    Engine's top move {board.san(candidate_move2)} from PV2 is not legal.")
-                                                else:
-                                                    print("    Engine's PV2 also starts with the backward move.")
-                                            else:
-                                                print("    Engine's top move is backward, but no valid PV2 found for alternative.")
+                                    # Eval check for engine's top line (score is after the first move of this PV)
+                                    score_obj_top_line = analysis_results[0]["score"]
+                                    current_player_score_top_line = score_obj_top_line.pov(current_turn).score(mate_score=30000)
+                                    top_line_move_san = board.san(analysis_results[0]['pv'][0]) # SAN of engine's top suggested move
+
+                                    if current_player_score_top_line is not None:
+                                        print(f"    Engine's top line ({top_line_move_san}) eval for {current_turn}: {current_player_score_top_line}cp.")
+                                        if current_player_score_top_line < -200:
+                                            print(f"    Skipping prelim: Top line eval ({current_player_score_top_line}cp) for {current_turn} is < -200cp threshold.")
+                                            prelim_failed = True
                                     else:
-                                        print("    Engine's PV1 is empty.")
-
-                                if not best_move: # If no suitable alternative was found
-                                    print("    Could not identify a best alternative move from MultiPV analysis.")
-                                    prelim_failed = True
-
+                                        print(f"    Could not get score for engine's top line ({top_line_move_san}) to check threshold.")
+                                        prelim_failed = True # If score is None, treat as failure for this check
                             except Exception as e:
-                                print(f"    Preliminary engine error during MultiPV analysis: {e}")
+                                print(f"    Error during MultiPV analysis or initial eval check: {e}")
                                 prelim_failed = True
+
+                            # --- Step 3: Identify Best Alternative Move (if Step 1 & 2 passed) ---
+                            if not prelim_failed:
+                                # analysis_results is now available and analysis_results[0] has a valid PV and score.
+                                candidate_move1 = analysis_results[0]["pv"][0]
+                                if candidate_move1.uci() != backward_move_uci:
+                                    if candidate_move1 in legal_moves:
+                                        best_move = candidate_move1
+                                    else:
+                                        print(f"    Engine's top move {board.san(candidate_move1)} from PV1 is not legal.")
+                                        # best_move remains None, will be caught below
+                                else:
+                                    # PV1 is the backward move, check PV2
+                                    if len(analysis_results) > 1 and analysis_results[1].get("pv") and analysis_results[1]["pv"]:
+                                        candidate_move2 = analysis_results[1]["pv"][0]
+                                        if candidate_move2.uci() != backward_move_uci: # Ensure PV2 is not also the backward move
+                                            if candidate_move2 in legal_moves:
+                                                best_move = candidate_move2
+                                            else:
+                                                print(f"    Engine's top move {board.san(candidate_move2)} from PV2 is not legal.")
+                                        else:
+                                            print("    Engine's PV2 also starts with the backward move.")
+                                    else:
+                                        print("    Engine's top move is backward, but no valid PV2 found for alternative.")
+                                
+                                if not best_move: # If no suitable alternative was found after checking PVs
+                                    print("    Could not identify a best alternative move from MultiPV analysis (after eval check).")
+                                    prelim_failed = True
+                            # --- End of best_move identification ---
 
                             # Get score for the identified best alternative move
                             if not prelim_failed and best_move:
@@ -213,7 +231,7 @@ def find_critical_backward_knight_moves(pgn_file_path, engine_path):
                                 except Exception as e:
                                     print(f"    Error evaluating best alternative move {board.san(best_move)}: {e}")
                                     prelim_failed = True
-                            elif not prelim_failed and not best_move: # Should have been caught by prelim_failed = True
+                            elif not prelim_failed and not best_move: # Should have been caught by prelim_failed = True in Step 3
                                 print("    No best alternative move identified to evaluate (consistency check).")
                                 prelim_failed = True
 

@@ -146,9 +146,12 @@ def export_to_pgn(puzzles, pgn_filepath):
             f.write(f'[Themes "{themes_str}"]\n')
             f.write(f'[PlyCount "{len(uci_moves_list)}"]\n')
             
-            # Movetext generation
             fen_parts = fen.split(' ')
             turn = fen_parts[1]  # 'w' or 'b'
+            turn_to_play_str = "White" if turn == 'w' else "Black"
+            f.write(f'[TurnToPlay "{turn_to_play_str}"]\n') # Added TurnToPlay tag
+            
+            # Movetext generation
             start_move_number = int(fen_parts[5]) 
             
             movetext = "\n"
@@ -204,7 +207,7 @@ if __name__ == "__main__":
     max_target_rating = 1800
     
     # Desired number of puzzles
-    num_puzzles_to_find = 250
+    num_puzzles_to_find = 600
 
     # Example: Exclude puzzles that are ONLY tagged as mateIn1 if you want more complex ones
     # themes_to_exclude = ["mateIn1"] 

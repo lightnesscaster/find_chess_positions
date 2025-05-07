@@ -12,6 +12,7 @@ def filter_puzzles(input_pgn_path, output_pgn_path, score_threshold=-200):
         score_threshold (int): The minimum SolutionScore to keep a puzzle.
     """
     filtered_games = []
+    count = 0
     with open(input_pgn_path) as pgn_file:
         while True:
             game = chess.pgn.read_game(pgn_file)
@@ -36,6 +37,8 @@ def filter_puzzles(input_pgn_path, output_pgn_path, score_threshold=-200):
                         # No inversion needed based on this interpretation.
                         if solution_score > score_threshold:
                             filtered_games.append(game)
+                        else:
+                            count += 1
                 except ValueError:
                     print(f"Warning: Could not parse SolutionScore '{solution_score_str}' for a game.")
             else:
@@ -47,6 +50,7 @@ def filter_puzzles(input_pgn_path, output_pgn_path, score_threshold=-200):
             game.accept(exporter)
             # Add a newline between games for better readability in the PGN
             output_file.write("\\n\\n")
+    print(f"Filtered {count} puzzles with SolutionScore <= {score_threshold}.")
     print(f"Filtered PGN saved to {output_pgn_path}")
 
 if __name__ == "__main__":

@@ -2,3 +2,6 @@ twic1591.pgn
 found_critical_positions.pgn
 mega_pgn_database.pgn
 backwards_knight_puzzles.pgn
+lichess_puzzles.pgn
+.DS_Store
+lichess_db_puzzle.csv

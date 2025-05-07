@@ -48,8 +48,7 @@ def filter_puzzles(input_pgn_path, output_pgn_path, score_threshold=-200):
         for game in filtered_games:
             exporter = chess.pgn.FileExporter(output_file)
             game.accept(exporter)
-            # Add a newline between games for better readability in the PGN
-            output_file.write("\\n\\n")
+
     print(f"Filtered {count} puzzles with SolutionScore <= {score_threshold}.")
     print(f"Filtered PGN saved to {output_pgn_path}")
 
